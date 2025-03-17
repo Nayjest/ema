@@ -1,0 +1,8 @@
+###
+POST https://api.linear.app/graphql
+Authorization: {{ linear_api_key }}
+Content-Type: application/json
+
+{
+  "query": "query { teams(first: 50) { nodes { id name key } } }"
+}

@@ -1,0 +1,11 @@
+# Generic Python dev files
+__pycache__
+.idea/
+.venv
+
+# App-specific
+.env
+.env*
+!.env*.example
+storage
+scratches/http-client.private.env.json

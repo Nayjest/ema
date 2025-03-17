@@ -1,0 +1,6 @@
+dotenv==1.0.1
+requests==25.0.1
+rich==13.9.4
+typer==0.15.2
+ai-microcore==3.15.0
+slack_bolt==1.22.0
