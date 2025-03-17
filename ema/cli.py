@@ -23,7 +23,7 @@ def get_issues(team: str):
 
 @app.command(name="all_issues")
 def get_all_issues():
-    issues = env.linear_api.fetch_all_tasks()
+    issues = env.linear_api.fetch_all_issues()
     pprint(issues)
     print("Total issues:", len(issues))
     import microcore as mc

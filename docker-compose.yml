@@ -1,0 +1,25 @@
+services:
+  mysql:
+    container_name: ema_mysql
+    image: mariadb:latest
+    env_file:
+      - .env
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_ROOT_HOST=%
+    volumes:
+      - ./mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - ./storage/mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - ema-net
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+networks:
+  ema-net:
+    driver: bridge

@@ -1,4 +1,6 @@
 import sys
+from importlib import import_module
+import pkgutil
 
 import typer
 
@@ -10,6 +12,12 @@ class CliApp (typer.Typer):
         super().__call__(*args, **kwargs)
 
 app = CliApp()
+
+def import_commands():
+    modules = [
+        import_module(f"ema.commands.{name}")
+        for _, name, _ in pkgutil.iter_modules(["ema/commands"])
+    ]
 
 def cli_bootstrap():
     # Read .env arg if exists and remove it

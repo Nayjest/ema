@@ -8,6 +8,120 @@ from functools import lru_cache
 
 from ema.utils import update_object_from_env
 
+ISSUE_FRAGMENT = """
+fragment IssueFields on Issue {
+    id
+    identifier
+    title
+    description
+    state { name }
+    assignee { displayName, name }
+    comments {
+        nodes {
+            user { displayName, name }
+            body
+            createdAt
+        }
+    }
+    createdAt
+    canceledAt
+    addedToCycleAt 
+    addedToProjectAt 
+    addedToTeamAt 
+    archivedAt 
+    attachments {
+        nodes {
+            id
+            title
+            url
+            creator {
+                name
+                displayName
+            }
+            createdAt
+        }
+    }
+    children {
+        nodes {
+            identifier
+        }
+    }
+    cycle {
+        id
+        name
+        number
+        team {
+            id
+            name
+        }
+    }
+    dueDate
+    estimate
+    history {
+        nodes {
+            actor { displayName }
+            archived 
+            archivedAt 
+            attachment {
+                id
+                title
+                url
+            }
+            autoArchived 
+            autoClosed
+            createdAt
+            descriptionUpdatedBy { displayName }
+            fromAssignee { displayName }
+            fromCycle { id name number }
+            fromEstimate 
+            fromPriority
+            fromState { name }
+            fromTitle
+            fromDueDate
+            toAssignee { displayName }
+            toCycle { id name number }
+            toEstimate 
+            toPriority
+            toState { name }
+            toTitle
+            toDueDate
+            trashed
+            addedLabels { name }
+            removedLabels { name }
+        }
+    }
+    labels {
+        nodes {
+            name
+        }
+    }
+    number
+    parent { id identifier title }
+    priority
+    priorityLabel
+    project {
+        id
+        lead { name displayName }
+        name
+        status { name } 
+        url
+    }
+    snoozedBy { name displayName }
+    snoozedUntilAt 
+    startedAt 
+    startedTriageAt 
+    subscribers {
+        nodes { displayName name }
+    }
+    team { name }
+    trashed
+    triagedAt
+    updatedAt
+    url
+}
+"""
+
+
 @dataclass
 class LinearConfig:
     api_url = "https://api.linear.app/graphql"
@@ -173,8 +287,39 @@ class LinearApi:
                                 toTitle
                                 toDueDate
                                 trashed
+                                
+                                addedLabels { name }
+                                removedLabels { name }
                             }
                         }
+                        labels {
+                            nodes {
+                                name
+                            }
+                        }
+                        number
+                        parent {id identifier title}
+                        priority
+                        priorityLabel
+                        project {
+                            id
+                            lead { name, displayName }
+                            name
+                            status { name } 
+                            url
+                        }
+                        snoozedBy { displayName }
+                        snoozedUntilAt 
+                        startedAt 
+                        startedTriageAt 
+                        subscribers {
+                           nodes {displayName, name}
+                        }
+                        team { name }
+                        trashed
+                        triagedAt
+                        updatedAt
+                        url
                     }
                 }
             }
@@ -405,7 +550,7 @@ class LinearApi:
         mc.storage.write_json("linear_schema.json", schema, backup_existing=False)
         return schema
 
-    def fetch_all_tasks(self, team: str = None) -> list[dict]:
+    def fetch_all_issues(self, team: str = None, callback: callable = None) -> list[dict]:
         """
         Fetches all tasks (issues) from the Linear API.
 
@@ -422,16 +567,11 @@ class LinearApi:
         while has_next_page:
             print('.', end='')
             query = """
+            %s
             query ($cursor: String, $teamFilter: IssueFilter) {
               issues(first: 100, after: $cursor, filter: $teamFilter) {
                 nodes {
-                  id
-                  identifier
-                  title
-                  description
-                  state { name }
-                  assignee { displayName }
-                  team { id name key }
+                  ...IssueFields
                 }
                 pageInfo {
                   hasNextPage
@@ -439,7 +579,7 @@ class LinearApi:
                 }
               }
             }
-            """
+            """ % ISSUE_FRAGMENT
 
             variables = {"cursor": cursor}
             if team:
@@ -449,12 +589,14 @@ class LinearApi:
             data = self.request(query, variables)
             if not data or "issues" not in data:
                 break
-
+            if callback:
+                for task in data["issues"]["nodes"]:
+                    callback(task)
             tasks.extend(data["issues"]["nodes"])
             page_info = data["issues"]["pageInfo"]
             has_next_page = page_info["hasNextPage"]
             cursor = page_info["endCursor"]
-            mc.storage.write_json("linear_tasks.json", tasks, backup_existing=False)
+            # mc.storage.write_json("linear_tasks.json", tasks, backup_existing=False)
 
         return tasks
 
