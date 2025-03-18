@@ -16,6 +16,7 @@ fragment IssueFields on Issue {
     description
     state { name }
     assignee { displayName, name }
+    creator { displayName, name }
     comments {
         nodes {
             user { displayName, name }
@@ -23,7 +24,9 @@ fragment IssueFields on Issue {
             createdAt
         }
     }
+    projectMilestone { name }
     createdAt
+    completedAt
     canceledAt
     addedToCycleAt 
     addedToProjectAt 
@@ -59,7 +62,7 @@ fragment IssueFields on Issue {
     estimate
     history {
         nodes {
-            actor { displayName }
+            actor { name displayName }
             archived 
             archivedAt 
             attachment {
@@ -70,15 +73,15 @@ fragment IssueFields on Issue {
             autoArchived 
             autoClosed
             createdAt
-            descriptionUpdatedBy { displayName }
-            fromAssignee { displayName }
+            descriptionUpdatedBy { name displayName }
+            fromAssignee { name displayName }
             fromCycle { id name number }
             fromEstimate 
             fromPriority
             fromState { name }
             fromTitle
             fromDueDate
-            toAssignee { displayName }
+            toAssignee { name displayName }
             toCycle { id name number }
             toEstimate 
             toPriority
@@ -206,129 +209,20 @@ class LinearApi:
         """ % team.id)
         return data['issues']['nodes']
 
-    def issue(self, id: str) -> dict:
+    def issue(self, uuid: str) -> dict:
         query = """
+            %s
             query {
                 issues(filter: { id: { eq: "%s" } }) {
                     nodes {
-                        id
-                        identifier
-                        title
-                        description
-                        state { name }
-                        assignee { displayName }
-                        comments {
-                            nodes {
-                                user { displayName }
-                                body
-                            }
-                        }
-                        canceledAt
-                        addedToCycleAt 
-                        addedToProjectAt 
-                        addedToTeamAt 
-                        archivedAt 
-                        attachments {
-                            nodes {
-                                id
-                                title
-                                url
-                                creator {
-                                    displayName
-                                }
-                            }
-                        }
-                        children {
-                          nodes {
-                           id
-                          }
-                        }
-                        cycle {
-                            id
-                            name
-                            number
-                            team {
-                              id
-                              name
-                            }
-                        }
-                        # documentContent {                     
-                        #     content
-                        # }
-                        dueDate
-                        estimate
-                        history {
-                            nodes {
-                                actor { displayName }
-                                archived 
-                                archivedAt 
-                                attachment {
-                                    id
-                                    title
-                                    url
-                                }
-                                autoArchived 
-                                autoClosed
-                                createdAt
-                                descriptionUpdatedBy { displayName }
-                                fromAssignee { displayName }
-                                fromCycle { id name number }
-                                fromEstimate 
-                                fromPriority
-                                fromState { name }
-                                fromTitle
-                                fromDueDate
-                                
-                                toAssignee { displayName }
-                                toCycle { id name number }
-                                toEstimate 
-                                toPriority
-                                toState { name }
-                                toTitle
-                                toDueDate
-                                trashed
-                                
-                                addedLabels { name }
-                                removedLabels { name }
-                            }
-                        }
-                        labels {
-                            nodes {
-                                name
-                            }
-                        }
-                        number
-                        parent {id identifier title}
-                        priority
-                        priorityLabel
-                        project {
-                            id
-                            lead { name, displayName }
-                            name
-                            status { name } 
-                            url
-                        }
-                        snoozedBy { displayName }
-                        snoozedUntilAt 
-                        startedAt 
-                        startedTriageAt 
-                        subscribers {
-                           nodes {displayName, name}
-                        }
-                        team { name }
-                        trashed
-                        triagedAt
-                        updatedAt
-                        url
+                        ...IssueFields
                     }
                 }
             }
-            """ % id
+            """ % (ISSUE_FRAGMENT,uuid)
         variables = {}
         response = self.request(query, variables)
-        pprint(response)
-        exit()
-        return response['issue']
+        return response["issues"]["nodes"][0]
 
     def teams(self) -> list[Team]:
         teams = []

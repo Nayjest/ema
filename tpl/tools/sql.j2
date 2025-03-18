@@ -1,0 +1,35 @@
+# SQL
+Query MYSQL database.
+Place single SQL Query in the <sql>...</sql> tag.
+
+## Schema
+{{ sql_schema }}
+
+## Usage examples:
+
+### Example 1
+User request: Show tasks created by John in the last 7 days
+AI Turn 1:
+<think>I will determine target user</think>
+<sql>select distinct creator from issues WHERE creator LIKE "%John%";</sql>
+System answer:
+| creator |
+|---------|
+| @john(John Doe) |
+| @eric(Eric Johnson) |
+AI Turn 2:
+<think>Correct user is @john(John Doe). Now I will find all tasks created by John in the last 7 days</think>
+<sql>select id from issues WHERE created_at >= NOW() - INTERVAL 7 DAY and creator like "@john%";</sql>
+
+System answer:
+| id |
+|---------|
+| P-334 |
+| P-335 |
+| P-336 |
+AI Turn 3:
+<think>Now everything is ready to display the results.</think>
+<answer>
+John Doe created the following tasks in the last 7 days:
+<tasks_widget>P-334, P-334, P-336</tasks_widget>
+</answer>

@@ -6,3 +6,12 @@ Content-Type: application/json
 {
   "query": "query { teams(first: 50) { nodes { id name key } } }"
 }
+
+###
+POST https://api.linear.app/graphql
+Authorization: {{ linear_api_key }}
+Content-Type: application/json
+
+{
+  "query": "query { issues(filter: {id: {eq: \"0009724a-f8e6-4f94-be80-95dc61a6f9c0\"}}) { nodes { identifier title } } }"
+}

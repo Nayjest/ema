@@ -5,8 +5,24 @@ import microcore as mc
 import re
 
 from microcore import ui
+from sqlalchemy import text
 
 import ema.env as env
+import ema.db as db
+from ema.tools import sql_schema
+
+def extract_xml_tags(text: str) -> list[tuple[str, str]]:
+    """
+    Extracts all XML tags and their content from a given text string.
+
+    Args:
+        text (str): The text containing XML-like tags.
+
+    Returns:
+        list[tuple[str, str]]: A list of tuples where each tuple contains a tag name and its content.
+    """
+    matches = re.findall(r"<(\w+)>(.*?)</\1>", text, re.DOTALL)
+    return [(tag, content.strip()) for tag, content in matches]
 
 def extract_xml_tag(text: str) -> tuple[str, str] | None:
     """
@@ -23,16 +39,15 @@ def extract_xml_tag(text: str) -> tuple[str, str] | None:
         return match.group(1), match.group(2).strip()
     return None, None
 
-# Example usage:
-text = "<note>Hello, this is an XML content!</note>"
-print(extract_xml_tag(text))  # Output: ('note', 'Hello, this is an XML content!')
 
-def answer(question: str):
+def answer(question: str, user: str):
     history = [
         mc.SysMsg(mc.tpl(
-            "answer_user_question.j2",
+            "answer_2.j2",
             linear_gql_schema=mc.storage.read("linear_schema_min_compact.txt"),
-            question=question
+            question=question,
+            user=user,
+            sql_schema = sql_schema()
         )),
     ]
     i = 0
@@ -43,22 +58,46 @@ def answer(question: str):
             break
         if i > 1:
             sleep(10)
-        answer: str = mc.llm(history)
-        history.append(mc.AssistantMsg(answer))
-        tag, content = extract_xml_tag(answer)
-        if tag == "answer":
-            print(ui.yellow(content))
-            break
-        if tag == "think":
-            history.append(mc.UserMsg("[SYSTEM]: Please continue"))
-            continue
-        if tag == "linear_gql":
-            try:
-                data = env.linear_api.request(content)
-            except Exception as e:
-                history.append(mc.UserMsg(str(e)))
+        ai_response: str = mc.llm(history)
+        history.append(mc.AssistantMsg(ai_response))
+        tags = extract_xml_tags(ai_response)
+
+        ended=False
+        sys_answer = "{System}: continue with the next step"
+        for tag,content in tags:
+
+            if tag == "result":
+                print(ui.yellow(content))
+                ended=True
+                break
+            if tag == "think":
                 continue
-            history.append(mc.UserMsg(json.dumps(data)))
-            continue
-        print(ui.red(f"Invalid XML tag found in the answer! {tag}"))
-        break
+            if tag == "linear_gql":
+                try:
+                    data = env.linear_api.request(content)
+                except Exception as e:
+                    sys_answer = str(e)
+                    continue
+                sys_answer = "Returned data:\n"+json.dumps(data)
+                continue
+            if tag == "sql":
+                print(ui.magenta("SQL:"+content))
+                try:
+                    # Execute the SQL query
+                    with db.session() as ses:
+                        result = ses.execute(text(content))
+                        rows = result.fetchall()
+
+                        # Format the result as a string
+                        result_str = "Query result:\n" + "\n".join([str(row) for row in rows])
+                        print(ui.yellow(result_str))
+                        sys_answer=result_str
+                except Exception as e:
+                    sys_answer=f"SQL Error: {str(e)}"
+                    print(ui.red(sys_answer))
+                    continue
+        if ended:
+            break
+        else:
+            history.append(mc.UserMsg(sys_answer))
+

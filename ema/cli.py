@@ -44,12 +44,15 @@ def schema():
 
 @app.command(name="ask")
 def ask(question: str):
-    usr = os.getenv("CLI_USER")
-    question = f"[name='{usr}']: {question}"
+    user = os.getenv("CLI_USER")
+
     print("Asking question:", question)
 
     from ema.agent import answer
-    answer(question)
+    answer(
+        question=question,
+        user=user
+    )
 #
 @app.command(name="gql")
 def gql_query(query: str):

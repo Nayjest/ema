@@ -1,25 +1,75 @@
 from dataclasses import dataclass
 from datetime import datetime
-from itertools import cycle
-from time import sleep, time
+from enum import Enum
+from time import time
 
 from rich.pretty import pprint
-from sqlalchemy import create_engine, Table, MetaData
+from sqlalchemy import Table
 from sqlalchemy.dialects.mysql import insert
-from sqlalchemy.orm import Session
 
 from ema.cli import app
 import ema.env as env
 import ema.db as db
 
-@dataclass
-class Task:
-    uuid: str
-    title: str
-    description: str
-    state: str
-    assignee: str
-    team: str
+
+class State(str, Enum):
+    DONE = "Done"
+    TO_DO = "To Do"
+    CANCELED = "Canceled"
+    IN_REVIEW = "In Review"
+    BACKLOG = "Backlog"
+    DUPLICATE = "Duplicate"
+    IN_PROGRESS = "In Progress"
+    NOT_APPLICABLE = "Not applicable"
+    READY_TO_TEST = "Ready to Test"
+    IN_UAT = "In UAT"
+    CONSIDER_FOR_FUTURE = "Consider for Future"
+    TRIAGE = "Triage"
+    FALSE_POSITIVE = "False Positive"
+    SUSPENDED = "Suspended"
+    CONVERTED_TO_STORY = "Converted to Story"
+    NEEDS_CLARIFICATION = "Needs Clarification"
+    PATCH_IN_UAT = "Patch in UAT"
+    CHROMIUM = "Chromium"
+    IN_TESTING = "In Testing"
+    ON_HOLD = "On Hold"
+    NEEDS_STORY = "Needs Story"
+    TO_TEST = "To Test"
+    IN_DEVELOPMENT= "In Development"
+    WAITING_FOR_MERGE = "Waiting for Merge"
+    DESIGN_REVIEW = "Design Review"
+    INITIAL_PRODUCT_REVIEW = "Initial Product Review"
+    UAT= "UAT"
+    CODE_REVIEW = "Code Review"
+    RESEARCH = "Research"
+    WONT_DO = "Won't Do"
+    COMPLETE = "Complete"
+    DESIGN = "Design"
+
+    @staticmethod
+    def non_doer_states():
+        return [
+            State.DONE,
+            State.CANCELED,
+            State.IN_REVIEW,
+            State.IN_UAT,
+            State.IN_REVIEW,
+            State.READY_TO_TEST,
+            State.DONE,
+            State.FALSE_POSITIVE,
+            State.SUSPENDED,
+            State.NEEDS_CLARIFICATION,
+            State.PATCH_IN_UAT,
+            State.CHROMIUM,
+            State.IN_TESTING,
+            State.TO_TEST,
+            State.DESIGN_REVIEW,
+            State.INITIAL_PRODUCT_REVIEW,
+            State.UAT,
+            State.CODE_REVIEW,
+            State.WONT_DO,
+            State.COMPLETE
+        ]
 
 def user_view(record: dict | None):
     return f"@{record['displayName']}({record['name']})" if record else None
@@ -29,9 +79,34 @@ def dt(field):
         return None
     return datetime.fromisoformat(field).strftime("%Y-%m-%d %H:%M:%S")
 
+def identify_doer(task):
+    nodes = task["history"]["nodes"]
+    items = [i for i in nodes if i["fromState"] and i["toState"]]
+    for i in items:
+        if i["toState"]["name"] == "In Progress":
+            return user_view(i["actor"])
+    if task["state"]["name"] in State.non_doer_states():
+        for i in items:
+            if i["fromState"]["name"] == "In Progress":
+                return user_view(i["actor"])
+    return user_view(task["assignee"])
+
+
+def historical_assignees(task):
+    nodes = task["history"]["nodes"]
+    items = [user_view(i["toAssignee"]) for i in nodes if i["toAssignee"]]
+    items += [user_view(i["fromAssignee"]) for i in nodes if i["fromAssignee"]]
+    if task["assignee"]:
+        items += [user_view(task["assignee"])]
+    return ", ".join(set(items))
+
 def process_task(task):
     pprint(task)
     issues_table = Table("issues", db.db_metadata, autoload_with=db.db_engine)
+
+    task["history"]["nodes"].sort(key=lambda x: x["createdAt"])
+    task["comments"]["nodes"].sort(key=lambda x: x["createdAt"])
+
     comments = "\n---\n".join([
         f"[{dt(c['createdAt'])}] {user_view(c['user'])}: {c['body']}"
         for c in task["comments"]["nodes"]
@@ -46,8 +121,12 @@ def process_task(task):
         title=task["title"],
         description=task["description"],
         state=task["state"]["name"],
-        assignee=user_view(task["assignee"]),
+        current_assignee=user_view(task["assignee"]),
+        doer=identify_doer(task),
+        historical_assignees=historical_assignees(task),
+        creator=user_view(task["creator"]),
         comments = comments,
+        milestone = task["projectMilestone"]["name"] if task["projectMilestone"] else None,
         created_at=dt(task["createdAt"]),
         canceled_at=dt(task["canceledAt"]),
         added_to_cycle_at=dt(task["addedToCycleAt"]),
@@ -74,6 +153,7 @@ def process_task(task):
         team=f"{task['team']['name']}" if task["team"] else None,
         trashed=task["trashed"],
         triaged_at=dt(task["triagedAt"]),
+        completed_at=dt(task["completedAt"]),
         updated_at=dt(task["updatedAt"]),
     )
     with db.session() as ses:
@@ -85,17 +165,6 @@ def process_task(task):
         # stmt = stmt.on_conflict_do_update(index_elements=['uuid'],  set_={k: stmt.excluded[k] for k in data.keys()})
         ses.execute(stmt)
         ses.commit()
-    # with db.session() as ses:
-    #     try:
-    #         ses.execute(issues_table.insert().values(data))
-    #         ses.commit()
-    #     except Exception as e:
-    #         # If a duplicate key error occurs, update the existing record
-    #         ses.rollback()
-    #         update_stmt = issues_table.update().where(issues_table.c.uuid == task["id"]).values(data)
-    #         ses.execute(update_stmt)
-    #         ses.commit()
-
 
 
 @app.command()
