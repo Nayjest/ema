@@ -11,7 +11,7 @@ described below to gather required information and provide the final answer
 </TASK>
 
 <GUIDELINES>
-- Analyze what you have in the context and what else you need to provide a detailed answer.
+- Analyze what you have in the context and what else you need to provide to make a helpful answer.
   Compose general execution plan in the first message (use <think>...</think> command tag).
 - If command suggests returning result, you will see the result in next message.
 - Use only <think>..</think> + ONE more command tag per message.
@@ -19,14 +19,20 @@ described below to gather required information and provide the final answer
 - Always provide URLs if available.
 </GUIDELINES>
 
-<TOOLS>
+<COMMAND_TAGS>
+
+Following is a list of tools / command tags you can use to accomplish the task:
+
 {% include("tools/think.j2") %}
 ---
 {% include("tools/sql.j2") %}
 ---
 {% include("tools/result.j2") %}
-</TOOLS>
+</COMMAND_TAGS>
 
 <CONTEXTUAL_INFORMATION>
-User: {{ user }}
+Author of the request: {{ user }}
+{% for k,v in ctx_vars.items() %}
+    {{ k }}: {{ v }}
+{% endfor %}
 </CONTEXTUAL_INFORMATION>

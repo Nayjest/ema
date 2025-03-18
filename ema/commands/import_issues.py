@@ -4,13 +4,17 @@ from enum import Enum
 from time import time
 
 from rich.pretty import pprint
-from sqlalchemy import Table
+from sqlalchemy import Table, text
 from sqlalchemy.dialects.mysql import insert
 
 from ema.cli import app
 import ema.env as env
 import ema.db as db
 
+@app.command()
+def test():
+    with db.session() as ses:
+        print(ses.execute(text("SELECT 1")).fetchall())
 
 class State(str, Enum):
     DONE = "Done"

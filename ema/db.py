@@ -1,6 +1,4 @@
 import os
-from msilib import Table
-
 from sqlalchemy import Engine, MetaData, create_engine
 from sqlalchemy.orm import sessionmaker
 

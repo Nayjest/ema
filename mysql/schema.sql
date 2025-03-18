@@ -12,7 +12,7 @@ CREATE TABLE issues (
     doer VARCHAR(255), -- Person who worked on the issue according to history or the current assignee
     historical_assignees TEXT, -- @nickname(FirstName LastName) separated by comma+space
     creator VARCHAR(255), -- @nickname(FirstName LastName)
-    comments TEXT,
+    comments MEDIUMTEXT,
     milestone VARCHAR(255),
     archived_at TIMESTAMP,
     attachments TEXT,

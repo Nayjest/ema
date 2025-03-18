@@ -2,6 +2,10 @@
 Query MYSQL database.
 Place single SQL Query in the <sql>...</sql> tag.
 
+## Important Notes
+- Database content language is English. Always use English language in SQL queries.
+- Always transliterate names to English.
+
 ## Schema
 {{ sql_schema }}
 
@@ -19,7 +23,7 @@ System answer:
 | @eric(Eric Johnson) |
 AI Turn 2:
 <think>Correct user is @john(John Doe). Now I will find all tasks created by John in the last 7 days</think>
-<sql>select id from issues WHERE created_at >= NOW() - INTERVAL 7 DAY and creator like "@john%";</sql>
+<sql>select id from issues WHERE created_at >= NOW() - INTERVAL 7 DAY and creator like "%John Doe%";</sql>
 
 System answer:
 | id |

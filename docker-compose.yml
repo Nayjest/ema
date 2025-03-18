@@ -14,12 +14,31 @@ services:
       - "3306:3306"
     networks:
       - ema-net
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+#    healthcheck:
+#      test: ["CMD", "mysql", "-h", "127.0.0.1", "-u", "root", "-e", "SELECT 1;"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#      start_period: 30s
+
+
+  ema:
+    container_name: ema
+    image: ema
+    tty: true
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    networks:
+      - ema-net
+    volumes:
+      - ./storage:/app/storage
+      - .:/app
+#    depends_on:
+#      mysql:
+#        condition: service_healthy
+
 networks:
   ema-net:
     driver: bridge

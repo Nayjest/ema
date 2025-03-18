@@ -40,14 +40,16 @@ def extract_xml_tag(text: str) -> tuple[str, str] | None:
     return None, None
 
 
-def answer(question: str, user: str):
+def answer(question: str, user: str, ctx_vars: dict = None) -> str:
+    ctx_vars = ctx_vars or {}
     history = [
         mc.SysMsg(mc.tpl(
             "answer_2.j2",
             linear_gql_schema=mc.storage.read("linear_schema_min_compact.txt"),
             question=question,
             user=user,
-            sql_schema = sql_schema()
+            sql_schema = sql_schema(),
+            ctx_vars=ctx_vars
         )),
     ]
     i = 0
@@ -62,13 +64,13 @@ def answer(question: str, user: str):
         history.append(mc.AssistantMsg(ai_response))
         tags = extract_xml_tags(ai_response)
 
-        ended=False
+        final_response=False
         sys_answer = "{System}: continue with the next step"
         for tag,content in tags:
 
             if tag == "result":
                 print(ui.yellow(content))
-                ended=True
+                final_response=content
                 break
             if tag == "think":
                 continue
@@ -91,13 +93,23 @@ def answer(question: str, user: str):
                         # Format the result as a string
                         result_str = "Query result:\n" + "\n".join([str(row) for row in rows])
                         print(ui.yellow(result_str))
+                        result_str += (
+                            "\n\nBefore proceeding to next step, carefully review your query and the result above."
+                            "Think and self-correct in case if you made a wrong assumptions or if query is inaccurate "
+                            "or if you have any other concerns."
+                            "Ensure you strictly followed the instructions and requirements."
+                            "You may always review your strategy and previous steps if needed."
+                            "Remember, you need to deliver most precise, accurate and reliable information to the client."
+                        )
                         sys_answer=result_str
                 except Exception as e:
                     sys_answer=f"SQL Error: {str(e)}"
                     print(ui.red(sys_answer))
-                    continue
-        if ended:
+                continue
+            sys_answer = f"Error: unsupported action tag: {tag}. Use only tags described in <COMMAND_TAGS> section at the beginning of conversation."
+        if final_response:
             break
         else:
             history.append(mc.UserMsg(sys_answer))
+    return final_response
 

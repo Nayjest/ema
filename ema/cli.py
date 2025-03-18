@@ -35,8 +35,6 @@ def get_issue(identifier: str):
     pprint(issue)
 
 
-from gql import gql, Client
-from gql.transport.requests import RequestsHTTPTransport
 @app.command(name="schema")
 def schema():
     res = env.linear_api.schema()

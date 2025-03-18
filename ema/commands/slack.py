@@ -5,6 +5,7 @@ from rich.pretty import pprint
 from slack_bolt import App as SlackApp
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
+from ema.agent import answer
 from ema.utils import update_object_from_env
 from ema.cli_app import app as cli_app
 
@@ -26,6 +27,17 @@ def message_handler(body, say, logger, slack_app):
     user_id = body["event"]["user"]
     text = body["event"]["text"]
     user = slack_app.client.users_info(user=user_id).data["user"]
+    name = user.get("real_name") or user.get("name")
+    vars = {}
+    if user.get("tz"):
+        tz = user["tz"]
+        if user["tz_label"]:
+            tz = f"{tz} ({user['tz_label']})"
+        vars["tz"] = tz
+    if user.get("profile"):
+        vars["title"] = user["profile"].get("title")
+
+
 
     pprint(user)
     print(
@@ -36,7 +48,16 @@ def message_handler(body, say, logger, slack_app):
     )
 
     # Optional: Respond to the user
-    say("Got your message! 👍")
+    thinking_message = say({"text":"🤔","mrkdwn": True})
+    ai_answer = answer(text, name, vars)
+    slack_app.client.chat_update(
+        channel=body["event"]["channel"],
+        ts=thinking_message["ts"],  # Use the timestamp of the initial message
+        text=ai_answer,
+        mrkdwn=True
+    )
+    #slack_sdk.errors.SlackApiError: The request to the Slack API failed. (url: https://slack.com/api/chat.update)
+    # {'ok': False, 'error': 'msg_too_long'}
 
 @cli_app.command()
 def slack():
