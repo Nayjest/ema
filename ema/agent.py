@@ -64,7 +64,8 @@ def answer(
         i+=1
         if i > 10:
             print(ui.red("Too many iterations!"))
-            break
+            return "Sorry, I can't help you with this question. Max thinking iterations reached."
+
         if i > 1:
             sleep(10)
         ai_response: str = mc.llm(history)
