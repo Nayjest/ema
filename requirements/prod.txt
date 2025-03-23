@@ -7,3 +7,5 @@ slack_bolt==1.22.0
 sqlalchemy==2.0.39
 pymysql==1.1.1
 google-generativeai
+chromadb==0.6.3
+sentence_transformers==3.4.1
