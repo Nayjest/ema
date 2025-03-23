@@ -1,3 +1,4 @@
+import logging
 from dataclasses import field, dataclass
 
 from microcore import ui
@@ -45,9 +46,9 @@ def split_message_by_lines(message, max_length=3000):
 def message_handler(body, say, logger, slack_app):
     """Handles direct messages to the bot."""
     user_id = body["event"]["user"]
-    text = body["event"]["text"]
+    user_request_text = body["event"]["text"]
     user = slack_app.client.users_info(user=user_id).data["user"]
-    name = user.get("real_name") or user.get("name")
+    user_name = user.get("real_name") or user.get("name")
     vars = {}
     if user.get("tz"):
         tz = user["tz"]
@@ -57,18 +58,19 @@ def message_handler(body, say, logger, slack_app):
     if user.get("profile"):
         vars["title"] = user["profile"].get("title")
 
-
-
-    pprint(user)
     print(
         f"FROM {ui.green('@'+user['name'])}",
         ui.gray(f"({user['real_name']}, {user['profile']['title']}):"),
         "\n>",
-        ui.cyan(text)
+        ui.cyan(user_request_text)
     )
 
     thinking_message = say({"text":"🤔","mrkdwn": True})
-    ai_answer = answer(text, name, vars, interface=Interface.SLACK)
+    try:
+        ai_answer = answer(user_request_text, user_name, vars, interface=Interface.SLACK)
+    except Exception as e:
+        logging.error(e)
+        ai_answer = f"🔴 Sorry, I couldn't process your request.\n *Error:* `{e}`"
     chunks = split_message_by_lines(ai_answer)
     slack_app.client.chat_update(
         channel=body["event"]["channel"],
