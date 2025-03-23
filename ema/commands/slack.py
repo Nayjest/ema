@@ -6,6 +6,7 @@ from slack_bolt import App as SlackApp
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 from ema.agent import answer
+from ema.interfaces import Interface
 from ema.utils import update_object_from_env
 from ema.cli_app import app as cli_app
 
@@ -21,6 +22,25 @@ class SlackConfig:
 def mention_handler(body, say):
     """Handles @mentions to the bot."""
     say("Hello! 👋")
+
+
+def split_message_by_lines(message, max_length=3000):
+    """Splits a long message into chunks, ensuring lines are not broken."""
+    lines = message.split("\n")
+    chunks = []
+    current_chunk = ""
+
+    for line in lines:
+        if len(current_chunk) + len(line) + 1 > max_length:  # +1 for newline
+            chunks.append(current_chunk.strip())  # Save the current chunk
+            current_chunk = ""  # Start a new chunk
+        current_chunk += line + "\n"
+
+    if current_chunk.strip():  # Add any remaining lines
+        chunks.append(current_chunk.strip())
+
+
+    return chunks
 
 def message_handler(body, say, logger, slack_app):
     """Handles direct messages to the bot."""
@@ -47,17 +67,20 @@ def message_handler(body, say, logger, slack_app):
         ui.cyan(text)
     )
 
-    # Optional: Respond to the user
     thinking_message = say({"text":"🤔","mrkdwn": True})
-    ai_answer = answer(text, name, vars)
+    ai_answer = answer(text, name, vars, interface=Interface.SLACK)
+    chunks = split_message_by_lines(ai_answer)
     slack_app.client.chat_update(
         channel=body["event"]["channel"],
-        ts=thinking_message["ts"],  # Use the timestamp of the initial message
-        text=ai_answer,
-        mrkdwn=True
+        ts=thinking_message["ts"],
+        blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": chunks[0]}}]
     )
-    #slack_sdk.errors.SlackApiError: The request to the Slack API failed. (url: https://slack.com/api/chat.update)
-    # {'ok': False, 'error': 'msg_too_long'}
+
+    for chunk in chunks[1:]:
+        slack_app.client.chat_postMessage(
+            channel=body["event"]["channel"],
+            blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": chunk}}]
+        )
 
 @cli_app.command()
 def slack():

@@ -9,8 +9,8 @@ CREATE TABLE issues (
     description TEXT,
     state VARCHAR(36), -- Popular values: Done, To Do, Canceled, In Review, Backlog, Duplicate, In Progress, Not applicable, Ready to Test, In UAT, Consider For Future, Triage, Suspended, Needs Clarification, In Testing, On Hold, To Test, In Development, Waiting for Merge, ...
     current_assignee VARCHAR(255), -- @nickname(FirstName LastName), current assignee (typically emptied when moved to Done)
-    doer VARCHAR(255), -- Person who worked on the issue according to history or the current assignee
-    historical_assignees TEXT, -- @nickname(FirstName LastName) separated by comma+space
+    doer VARCHAR(255), -- @nickname(FirstName LastName), Person who worked on the issue according to history or the current assignee
+    historical_assignees TEXT, -- list of @nickname(FirstName LastName) separated by comma+space
     creator VARCHAR(255), -- @nickname(FirstName LastName)
     comments MEDIUMTEXT,
     milestone VARCHAR(255),
@@ -20,7 +20,7 @@ CREATE TABLE issues (
     cycle INT,
     due_date TIMESTAMP,
     estimate INT,
-    labels VARCHAR(255),
+    labels VARCHAR(255), -- list of labels separated by comma+space
     parent VARCHAR(36), -- human-readable id
     priority INT, -- 0,1,2,3,4
     priority_label VARCHAR(255), -- No priority, Urgent, High, Medium, Low
@@ -43,3 +43,7 @@ CREATE TABLE issues (
     canceled_at TIMESTAMP
 );
 -- </AI>
+
+create table users (
+    user VARCHAR(255) PRIMARY KEY
+)

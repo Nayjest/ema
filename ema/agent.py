@@ -9,6 +9,7 @@ from sqlalchemy import text
 
 import ema.env as env
 import ema.db as db
+from ema.interfaces import Interface
 from ema.tools import sql_schema
 
 def extract_xml_tags(text: str) -> list[tuple[str, str]]:
@@ -40,7 +41,12 @@ def extract_xml_tag(text: str) -> tuple[str, str] | None:
     return None, None
 
 
-def answer(question: str, user: str, ctx_vars: dict = None) -> str:
+def answer(
+    question: str,
+    user: str,
+    ctx_vars: dict = None,
+    interface: Interface = Interface.UNKNOWN,
+) -> str:
     ctx_vars = ctx_vars or {}
     history = [
         mc.SysMsg(mc.tpl(
@@ -49,7 +55,8 @@ def answer(question: str, user: str, ctx_vars: dict = None) -> str:
             question=question,
             user=user,
             sql_schema = sql_schema(),
-            ctx_vars=ctx_vars
+            ctx_vars=ctx_vars,
+            interface=interface
         )),
     ]
     i = 0
@@ -93,14 +100,14 @@ def answer(question: str, user: str, ctx_vars: dict = None) -> str:
                         # Format the result as a string
                         result_str = "Query result:\n" + "\n".join([str(row) for row in rows])
                         print(ui.yellow(result_str))
-                        result_str += (
-                            "\n\nBefore proceeding to next step, carefully review your query and the result above."
-                            "Think and self-correct in case if you made a wrong assumptions or if query is inaccurate "
-                            "or if you have any other concerns."
-                            "Ensure you strictly followed the instructions and requirements."
-                            "You may always review your strategy and previous steps if needed."
-                            "Remember, you need to deliver most precise, accurate and reliable information to the client."
-                        )
+                        # result_str += (
+                        #     "\n\nBefore proceeding to next step, carefully review your query and the result above."
+                        #     "Think and self-correct in case if you made a wrong assumptions or if query is inaccurate "
+                        #     "or if you have any other concerns."
+                        #     "Ensure you strictly followed the instructions and requirements."
+                        #     "You may always review your strategy and previous steps if needed."
+                        #     "Remember, you need to deliver most precise, accurate and reliable information to the client."
+                        # )
                         sys_answer=result_str
                 except Exception as e:
                     sys_answer=f"SQL Error: {str(e)}"

@@ -1,6 +1,7 @@
 import os
 from sqlalchemy import Engine, MetaData, create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
 
 session: sessionmaker
 db_engine: Engine
@@ -11,3 +12,6 @@ def init_db():
     db_engine = create_engine(os.getenv("DB_URL"), echo=True, future=True)
     session = sessionmaker(bind=db_engine)
     db_metadata = MetaData()
+
+    with session() as ses:
+        print(ses.execute(text("SELECT 1")).fetchall())
