@@ -1,0 +1,9 @@
+<SIMILAR_DOCUMENTS>
+The following are TOP N documents with the smallest semantic distance to the user request text.
+Likely it may help to satisfy the user's request.
+{%- for doc in similar_documents %}
+<document>
+{{ indent(doc, '  ') }}
+</document>
+{%- endfor %}
+</SIMILAR_DOCUMENTS>

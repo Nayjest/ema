@@ -1,0 +1,33 @@
+Issue ID: {{ issue.id }}
+Title: {{ issue.title }}
+{% if issue.description -%}
+[[ Description:
+{{ indent(issue.description, '  ') }}
+]]
+{% endif -%}
+Team: {{ issue.team }}
+Status: {{ issue.state }}
+Priority: {{ issue.priority_label }}
+Cycle: {{ issue.cycle }}
+Created by: {{ issue.creator }}
+{% if issue.assignee -%}
+    Current assignee: {{ issue.assignee }}
+{% endif -%}
+{% if issue.doer -%}
+Doer: {{ issue.doer }}
+{% endif -%}
+{% if issue.labels -%}
+Labels: {{ issue.labels }}
+{% endif -%}
+Created at: {{ date_format(issue.created_at) }}
+{% if issue.attachments -%}
+[[ Attachments:
+{{ indent(issue.attachments, '  ') }}
+]]
+{% endif -%}
+{% if issue.comments -%}
+[[ comments:
+{{ indent(issue.comments, '  ') }}
+]]
+{% endif -%}
+Issue Url: {{ issue.url }}
