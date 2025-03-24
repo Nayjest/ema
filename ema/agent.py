@@ -1,4 +1,5 @@
 import json
+import textwrap
 from time import sleep
 
 import microcore as mc
@@ -56,7 +57,9 @@ def answer(
             user=user,
             sql_schema = sql_schema(),
             ctx_vars=ctx_vars,
-            interface=interface
+            interface=interface,
+            similar_documents=mc.texts.search("issues", question, n_results=10),
+            indent = textwrap.indent,
         )),
     ]
     i = 0

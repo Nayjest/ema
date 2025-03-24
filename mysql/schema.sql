@@ -40,7 +40,9 @@ CREATE TABLE issues (
     added_to_project_at TIMESTAMP,
     added_to_team_at TIMESTAMP,
     updated_at TIMESTAMP,
-    canceled_at TIMESTAMP
+    canceled_at TIMESTAMP,
+    all_content MEDIUMTEXT, -- title+description+comments + related users, etc; for full-text / similarity search
+    FULLTEXT(all_content)
 );
 -- </AI>
 

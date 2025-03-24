@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import datetime
 
 import requests
 from rich.pretty import pprint
@@ -444,12 +445,21 @@ class LinearApi:
         mc.storage.write_json("linear_schema.json", schema, backup_existing=False)
         return schema
 
-    def fetch_all_issues(self, team: str = None, callback: callable = None) -> list[dict]:
+    from datetime import datetime
+
+    def fetch_all_issues(
+        self,
+        team: str = None,
+        callback: callable = None,
+        updated_after: datetime | str = None
+    ) -> list[dict]:
         """
         Fetches all tasks (issues) from the Linear API.
 
         Args:
-            team (str, optional): The team name, key, or ID to filter tasks by. If None, fetches tasks across all teams.
+            team (str, optional): The team name, key, or ID to filter tasks by.
+            callback (callable, optional): A function to apply to each fetched issue.
+            updated_after (datetime, optional): Only return issues updated after this datetime.
 
         Returns:
             list[dict]: A list of tasks (issues) with their details.
@@ -460,6 +470,7 @@ class LinearApi:
 
         while has_next_page:
             print('.', end='')
+
             query = """
             %s
             query ($cursor: String, $teamFilter: IssueFilter) {
@@ -476,24 +487,94 @@ class LinearApi:
             """ % ISSUE_FRAGMENT
 
             variables = {"cursor": cursor}
+            filter_criteria = {}
+
             if team:
                 team_obj = self.find_team(team)
-                variables["teamFilter"] = {"team": {"id": {"eq": team_obj.id}}}
+                filter_criteria["team"] = {"id": {"eq": team_obj.id}}
+
+            if updated_after:
+                if isinstance(updated_after, str):
+                    updated_after = datetime.fromisoformat(updated_after)
+                iso_time = updated_after.isoformat()
+                filter_criteria["updatedAt"] = {"gt": iso_time}
+
+            if filter_criteria:
+                variables["teamFilter"] = filter_criteria
 
             data = self.request(query, variables)
             if not data or "issues" not in data:
                 break
+
             if callback:
                 for task in data["issues"]["nodes"]:
                     callback(task)
+
             tasks.extend(data["issues"]["nodes"])
             page_info = data["issues"]["pageInfo"]
             has_next_page = page_info["hasNextPage"]
             cursor = page_info["endCursor"]
-            # mc.storage.write_json("linear_tasks.json", tasks, backup_existing=False)
 
         return tasks
 
+    def fetch_issue_qty(
+        self,
+        team: str = None,
+        updated_after: datetime | str = None
+    ) -> int:
+        """
+        Counts the number of issues matching the filters via pagination.
+
+        Args:
+            team (str, optional): Team name, key, or ID.
+            callback (callable, optional): Unused (for signature compatibility).
+            updated_after (datetime or str, optional): Only count issues updated after this datetime.
+
+        Returns:
+            int: Total number of matching issues.
+        """
+        count = 0
+        has_next_page = True
+        cursor = None
+
+        query = """
+        query ($cursor: String, $teamFilter: IssueFilter) {
+          issues(first: 100, after: $cursor, filter: $teamFilter) {
+            nodes { id }  # just grab the minimal field
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }
+        """
+
+        variables = {"cursor": cursor}
+        filter_criteria = {}
+
+        if team:
+            team_obj = self.find_team(team)
+            filter_criteria["team"] = {"id": {"eq": team_obj.id}}
+
+        if updated_after:
+            if isinstance(updated_after, str):
+                updated_after = datetime.fromisoformat(updated_after)
+            filter_criteria["updatedAt"] = {"gt": updated_after.isoformat()}
+
+        if filter_criteria:
+            variables["teamFilter"] = filter_criteria
+
+        while has_next_page:
+            print('.', end='')
+            variables["cursor"] = cursor
+            data = self.request(query, variables)
+            nodes = data["issues"]["nodes"]
+            count += len(nodes)
+            page_info = data["issues"]["pageInfo"]
+            has_next_page = page_info["hasNextPage"]
+            cursor = page_info["endCursor"]
+
+        return count
 
 #
 # # Fetch and print all teams

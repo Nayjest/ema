@@ -23,12 +23,14 @@ described below to gather required information and provide the final answer
 
 Following is a list of tools / command tags you can use to accomplish the task:
 
-{% include("tools/think.j2") %}
+{% include("components/tools/think.j2") %}
 ---
-{% include("tools/sql.j2") %}
+{% include("components/tools/sql.j2") %}
 ---
-{% include("tools/result.j2") %}
+{% include("components/tools/result.j2") %}
 </COMMAND_TAGS>
+
+{% include("components/similar_docs.j2") %}
 
 <CONTEXTUAL_INFORMATION>
 Author of the request: {{ user }}

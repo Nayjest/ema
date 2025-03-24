@@ -13,6 +13,9 @@ from rich.pretty import pprint
 import microcore as mc
 from microcore import ui
 
+import ema.env as env
+import ema.db as db
+
 
 
 @app.command()
