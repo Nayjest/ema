@@ -19,7 +19,9 @@ from microcore import ui
 
 import ema.env as env
 import ema.db as db
-
+from ema.db import *
+from ema.utils import *
+from ema.linear.issue import *
 
 @app.command()
 def repl():

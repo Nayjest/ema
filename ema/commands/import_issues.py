@@ -22,6 +22,7 @@ from microcore import ui
 from ema.cli import app
 import ema.env as env
 import ema.db as db
+from ema.linear.issue import issue_view
 from ema.utils import format_dt, format_dt_human
 
 
@@ -263,12 +264,7 @@ def process_task(task):
         completed_at=format_dt(task["completedAt"]),
         updated_at=format_dt(task["updatedAt"]),
     )
-    data["all_content"] = mc.tpl(
-        "issue_view.j2",
-        issue=data,
-        indent=textwrap.indent,
-        date_format=format_dt_human,
-    )
+    data["all_content"] = issue_view(data)
     with db.session() as ses:
         stmt = insert(issues_table).values(data)
         stmt = stmt.on_duplicate_key_update(**{k: stmt.inserted[k] for k in data.keys()})
