@@ -84,7 +84,7 @@ def update_object_from_env(obj: T, prefixes: list[str] | None = None) -> T:
     return obj
 
 
-def format_dt(value: str | datetime, fmt: str= "%Y-%m-%d %H:%M:%S") -> str:
+def format_dt(value: str | datetime, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
     if not value:
         return None
     if isinstance(value, str):
