@@ -6,18 +6,20 @@ import typer
 
 import ema.env as env
 
-class CliApp (typer.Typer):
+
+class CliApp(typer.Typer):
     def __call__(self, *args, **kwargs):
         cli_bootstrap()
         super().__call__(*args, **kwargs)
 
+
 app = CliApp()
 
+
 def import_commands():
-    modules = [
+    for _, name, _ in pkgutil.iter_modules(["ema/commands"]):
         import_module(f"ema.commands.{name}")
-        for _, name, _ in pkgutil.iter_modules(["ema/commands"])
-    ]
+
 
 def cli_bootstrap():
     # Read .env arg if exists and remove it

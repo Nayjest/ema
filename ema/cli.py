@@ -3,6 +3,8 @@ import os
 from rich.pretty import pprint
 import ema.env as env
 from ema.cli_app import app
+from ema.agent import answer
+
 
 @app.command(name="team")
 def get_team(name_or_key: str):
@@ -10,10 +12,12 @@ def get_team(name_or_key: str):
     team = env.linear_api.find_team(name_or_key)
     pprint(team)
 
+
 @app.command(name="teams")
 def get_teams():
     teams = env.linear_api.teams()
     pprint(teams)
+
 
 @app.command(name="issues")
 def get_issues(team: str):
@@ -21,13 +25,16 @@ def get_issues(team: str):
     pprint(issues)
     print("Total issues:", len(issues))
 
+
 @app.command(name="all_issues")
 def get_all_issues():
     issues = env.linear_api.fetch_all_issues()
     pprint(issues)
     print("Total issues:", len(issues))
     import microcore as mc
+
     mc.storage.write_json("all_issues.json", issues)
+
 
 @app.command(name="issue")
 def get_issue(identifier: str):
@@ -40,24 +47,19 @@ def schema():
     res = env.linear_api.schema()
     pprint(res)
 
+
 @app.command(name="ask")
 def ask(question: str):
     user = os.getenv("CLI_USER")
-
     print("Asking question:", question)
+    answer(question=question, user=user)
 
-    from ema.agent import answer
-    answer(
-        question=question,
-        user=user
-    )
-#
+
 @app.command(name="gql")
 def gql_query(query: str):
     print("Executing query:", query)
     result = env.linear_api.request(query)
     pprint(result)
-
 
 
 # @app.command()

@@ -2,7 +2,6 @@ import logging
 from dataclasses import field, dataclass
 
 from microcore import ui
-from rich.pretty import pprint
 from slack_bolt import App as SlackApp
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
@@ -10,6 +9,7 @@ from ema.agent import answer
 from ema.interfaces import Interface
 from ema.utils import update_object_from_env
 from ema.cli_app import app as cli_app
+
 
 @dataclass
 class SlackConfig:
@@ -19,6 +19,7 @@ class SlackConfig:
 
     def __post_init__(self):
         update_object_from_env(self, prefixes=["SLACK_"])
+
 
 def mention_handler(body, say):
     """Handles @mentions to the bot."""
@@ -40,8 +41,8 @@ def split_message_by_lines(message, max_length=3000):
     if current_chunk.strip():  # Add any remaining lines
         chunks.append(current_chunk.strip())
 
-
     return chunks
+
 
 def message_handler(body, say, logger, slack_app):
     """Handles direct messages to the bot."""
@@ -62,10 +63,10 @@ def message_handler(body, say, logger, slack_app):
         f"FROM {ui.green('@'+user['name'])}",
         ui.gray(f"({user['real_name']}, {user['profile']['title']}):"),
         "\n>",
-        ui.cyan(user_request_text)
+        ui.cyan(user_request_text),
     )
 
-    thinking_message = say({"text":"🤔","mrkdwn": True})
+    thinking_message = say({"text": "🤔", "mrkdwn": True})
     try:
         ai_answer = answer(user_request_text, user_name, vars, interface=Interface.SLACK)
     except Exception as e:
@@ -75,14 +76,15 @@ def message_handler(body, say, logger, slack_app):
     slack_app.client.chat_update(
         channel=body["event"]["channel"],
         ts=thinking_message["ts"],
-        blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": chunks[0]}}]
+        blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": chunks[0]}}],
     )
 
     for chunk in chunks[1:]:
         slack_app.client.chat_postMessage(
             channel=body["event"]["channel"],
-            blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": chunk}}]
+            blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": chunk}}],
         )
+
 
 @cli_app.command()
 def slack():
@@ -92,7 +94,9 @@ def slack():
 
     # Register event handlers
     slack_app.event("app_mention")(mention_handler)
-    slack_app.event("message")(lambda body, say, logger: message_handler(body, say, logger, slack_app))
+    slack_app.event("message")(
+        lambda body, say, logger: message_handler(body, say, logger, slack_app)
+    )
 
     handler = SocketModeHandler(slack_app, config.app_token)
     handler.start()

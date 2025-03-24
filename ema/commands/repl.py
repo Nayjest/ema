@@ -1,3 +1,7 @@
+"""
+Python REPL for the EMA CLI with initialized environment and common imports.
+"""
+# flake8: noqa: F401
 import code
 from ema.cli import app
 
@@ -15,7 +19,6 @@ from microcore import ui
 
 import ema.env as env
 import ema.db as db
-
 
 
 @app.command()

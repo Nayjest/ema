@@ -1,8 +1,8 @@
 import textwrap
-from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
 from time import time
+from enum import Enum
+
 
 from rich.pretty import pprint
 from rich.progress import (
@@ -37,12 +37,10 @@ def test():
         i = dict(rows[0])
         pprint(i, expand_all=True, indent_guides=True)
         view = mc.tpl(
-            "issue_view.j2",
-            issue=rows[0],
-            indent=textwrap.indent,
-            date_format = date_format
+            "issue_view.j2", issue=rows[0], indent=textwrap.indent, date_format=date_format
         )
         print(mc.ui.blue(view))
+
 
 @app.command("index-all-content")
 def index_all_content():
@@ -113,13 +111,11 @@ def index_vec():
         task = progress.add_task("[green]Saving chunks...", total=total_chunks)
 
         for i in range(0, len(data), chunk_size):
-            chunk = data[i:i+chunk_size]
+            chunk = data[i: i + chunk_size]
             mc.texts.save_many(collection, chunk)
             progress.update(task, advance=1)
 
     print(f"Done in {time() - start:.2f} seconds.")
-
-
 
 
 class State(str, Enum):
@@ -145,11 +141,11 @@ class State(str, Enum):
     ON_HOLD = "On Hold"
     NEEDS_STORY = "Needs Story"
     TO_TEST = "To Test"
-    IN_DEVELOPMENT= "In Development"
+    IN_DEVELOPMENT = "In Development"
     WAITING_FOR_MERGE = "Waiting for Merge"
     DESIGN_REVIEW = "Design Review"
     INITIAL_PRODUCT_REVIEW = "Initial Product Review"
-    UAT= "UAT"
+    UAT = "UAT"
     CODE_REVIEW = "Code Review"
     RESEARCH = "Research"
     WONT_DO = "Won't Do"
@@ -178,21 +174,25 @@ class State(str, Enum):
             State.UAT,
             State.CODE_REVIEW,
             State.WONT_DO,
-            State.COMPLETE
+            State.COMPLETE,
         ]
+
 
 def user_view(record: dict | None):
     return f"@{record['displayName']}({record['name']})" if record else None
+
 
 def dt(field):
     if not field:
         return None
     return datetime.fromisoformat(field).strftime("%Y-%m-%d %H:%M:%S")
 
+
 def dt_human(dt: str | datetime) -> str:
     if isinstance(dt, str):
         dt = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
     return dt.strftime("%d %B, %H:%M")
+
 
 def identify_doer(task):
     nodes = task["history"]["nodes"]
@@ -215,20 +215,25 @@ def historical_assignees(task):
         items += [user_view(task["assignee"])]
     return ", ".join(set(items))
 
+
 def process_task(task):
     issues_table = Table("issues", db.db_metadata, autoload_with=db.db_engine)
 
     task["history"]["nodes"].sort(key=lambda x: x["createdAt"])
     task["comments"]["nodes"].sort(key=lambda x: x["createdAt"])
 
-    comments = "\n---\n".join([
-        f"[{dt(c['createdAt'])}] {user_view(c['user'])}: {c['body']}"
-        for c in task["comments"]["nodes"]
-    ])
-    attachments = "\n---\n".join([
-        f"[{dt(a['createdAt'])}] {user_view(a['creator'])}: [{a['url']}]({a['title']})"
-        for a in task["attachments"]["nodes"]
-    ])
+    comments = "\n---\n".join(
+        [
+            f"[{dt(c['createdAt'])}] {user_view(c['user'])}: {c['body']}"
+            for c in task["comments"]["nodes"]
+        ]
+    )
+    attachments = "\n---\n".join(
+        [
+            f"[{dt(a['createdAt'])}] {user_view(a['creator'])}: [{a['url']}]({a['title']})"
+            for a in task["attachments"]["nodes"]
+        ]
+    )
     data = dict(
         uuid=task["id"],
         id=task["identifier"],
@@ -239,8 +244,8 @@ def process_task(task):
         doer=identify_doer(task),
         historical_assignees=historical_assignees(task),
         creator=user_view(task["creator"]),
-        comments = comments,
-        milestone = task["projectMilestone"]["name"] if task["projectMilestone"] else None,
+        comments=comments,
+        milestone=task["projectMilestone"]["name"] if task["projectMilestone"] else None,
         created_at=dt(task["createdAt"]),
         canceled_at=dt(task["canceledAt"]),
         added_to_cycle_at=dt(task["addedToCycleAt"]),
@@ -249,28 +254,27 @@ def process_task(task):
         archived_at=dt(task["archivedAt"]),
         attachments=attachments,
         # attachments = task["attachments"]["nodes"],
-        children=', '.join([i["identifier"] for i in task["children"]["nodes"]]),
+        children=", ".join([i["identifier"] for i in task["children"]["nodes"]]),
         cycle=task["cycle"]["number"] if task["cycle"] else None,
         due_date=dt(task["dueDate"]),
         estimate=task["estimate"],
-        labels=', '.join([i["name"] for i in task["labels"]["nodes"]]),
+        labels=", ".join([i["name"] for i in task["labels"]["nodes"]]),
         priority=task["priority"],
         priority_label=task["priorityLabel"],
-
         project=task["project"]["name"] if task["project"] else None,
         url=task["url"],
         snoozed_by=user_view(task["snoozedBy"]),
         snoozed_until=dt(task["snoozedUntilAt"]),
         started_at=dt(task["startedAt"]),
         started_triage_at=dt(task["startedTriageAt"]),
-        subscribers=', '.join([user_view(i) for i in task["subscribers"]["nodes"]]),
+        subscribers=", ".join([user_view(i) for i in task["subscribers"]["nodes"]]),
         team=f"{task['team']['name']}" if task["team"] else None,
         trashed=task["trashed"],
         triaged_at=dt(task["triagedAt"]),
         completed_at=dt(task["completedAt"]),
         updated_at=dt(task["updatedAt"]),
     )
-    data['all_content'] = mc.tpl(
+    data["all_content"] = mc.tpl(
         "issue_view.j2",
         issue=data,
         indent=textwrap.indent,
@@ -278,9 +282,7 @@ def process_task(task):
     )
     with db.session() as ses:
         stmt = insert(issues_table).values(data)
-        stmt = stmt.on_duplicate_key_update(
-            **{k: stmt.inserted[k] for k in data.keys()}
-        )
+        stmt = stmt.on_duplicate_key_update(**{k: stmt.inserted[k] for k in data.keys()})
         # For PostgreSQL
         # stmt = stmt.on_conflict_do_update(index_elements=['uuid'],  set_={k: stmt.excluded[k] for k in data.keys()})
         ses.execute(stmt)
@@ -289,12 +291,8 @@ def process_task(task):
     mc.texts.save("issues", data["all_content"], {"issue_id": data["id"]})
 
 
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
-from datetime import datetime
-from time import time
-
-@app.command('index-issues', help="Import issues from Linear")
-@app.command('import_issues', hidden=True)
+@app.command("index-issues", help="Import issues from Linear")
+@app.command("import_issues", hidden=True)
 def index_issues(force: bool = False, fast: bool = False):
     print(ui.magenta("--==[[ Linear Issues Indexing ]]==--"))
     EPOCH_START = "1970-01-01"
@@ -309,7 +307,9 @@ def index_issues(force: bool = False, fast: bool = False):
         mc.storage.delete(idx_info_file)
 
     if fast:
-        mc.ui.warning("--fast: True", mc.ui.red("progress will not reflect the actual number of issues"))
+        mc.ui.warning(
+            "--fast: True", mc.ui.red("progress will not reflect the actual number of issues")
+        )
         issue_qty = 20  # arbitrary small start
     else:
         print("Calculating number of issues to index...")
@@ -353,6 +353,6 @@ def index_issues(force: bool = False, fast: bool = False):
     idx_info = {
         "last_indexed": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "duration": duration,
-        "updated_records": len(records)
+        "updated_records": len(records),
     }
     mc.storage.write_json(idx_info_file, idx_info, backup_existing=False)
