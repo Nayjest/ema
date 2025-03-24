@@ -3,8 +3,6 @@ from datetime import datetime
 from time import time
 from enum import Enum
 
-
-from rich.pretty import pprint
 from rich.progress import (
     Progress,
     TextColumn,
@@ -26,31 +24,8 @@ from ema.linear.issue import issue_view
 from ema.utils import format_dt, format_dt_human
 
 
-@app.command()
-def test():
-    def date_format(dt: str | datetime) -> str:
-        if isinstance(dt, str):
-            dt = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
-        return dt.strftime("%d %B, %H:%M")
-
-    with db.session() as ses:
-        result = ses.execute(text("SELECT * FROM issues limit 1"))
-        rows = result.mappings().all()  # returns list of dict-like RowMapping
-        i = dict(rows[0])
-        pprint(i, expand_all=True, indent_guides=True)
-        view = mc.tpl(
-            "issue_view.j2", issue=rows[0], indent=textwrap.indent, date_format=date_format
-        )
-        print(mc.ui.blue(view))
-
-
 @app.command("index-all-content")
 def index_all_content():
-    def date_format(dt: str | datetime) -> str:
-        if isinstance(dt, str):
-            dt = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
-        return dt.strftime("%d %B, %H:%M")
-
     start = time()
     mc.texts.clear("issues")
     with db.session() as ses:
@@ -66,7 +41,7 @@ def index_all_content():
                     "issue_view.j2",
                     issue=row,
                     indent=textwrap.indent,
-                    date_format=date_format,
+                    date_format=format_dt_human,
                 )
                 mc.texts.save("issues", rendered, {"issue_id": issue["id"]})
                 ses.execute(
@@ -336,7 +311,7 @@ def index_issues(force: bool = False, fast: bool = False):
     duration = time() - t
 
     idx_info = {
-        "last_indexed": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "last_indexed": format_dt(datetime.now()),
         "duration": duration,
         "updated_records": len(records),
     }

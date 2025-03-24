@@ -1,5 +1,6 @@
 import json
 import textwrap
+from datetime import datetime
 from time import sleep
 
 import microcore as mc
@@ -12,6 +13,7 @@ import ema.env as env
 import ema.db as db
 from ema.interfaces import Interface
 from ema.tools import sql_schema
+from ema.utils import format_dt
 
 
 def extract_xml_tags(text: str) -> list[tuple[str, str]]:
@@ -51,7 +53,9 @@ def answer(
     ctx_vars: dict = None,
     interface: Interface = Interface.UNKNOWN,
 ) -> str:
-    ctx_vars = ctx_vars or {}
+    ctx_vars = ctx_vars or {
+        "time": format_dt(datetime.now()),
+    }
     history = [
         mc.SysMsg(
             mc.tpl(
