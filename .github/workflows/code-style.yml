@@ -11,4 +11,4 @@ jobs:
       - name: Install dependencies
         run: pip install --upgrade pip flake8
       - name: flake8
-        run: flake8 ai
+        run: flake8 ema
