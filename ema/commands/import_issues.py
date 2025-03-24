@@ -22,6 +22,7 @@ from microcore import ui
 from ema.cli import app
 import ema.env as env
 import ema.db as db
+from ema.utils import format_dt, format_dt_human
 
 
 @app.command()
@@ -182,18 +183,6 @@ def user_view(record: dict | None):
     return f"@{record['displayName']}({record['name']})" if record else None
 
 
-def dt(field):
-    if not field:
-        return None
-    return datetime.fromisoformat(field).strftime("%Y-%m-%d %H:%M:%S")
-
-
-def dt_human(dt: str | datetime) -> str:
-    if isinstance(dt, str):
-        dt = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
-    return dt.strftime("%d %B, %H:%M")
-
-
 def identify_doer(task):
     nodes = task["history"]["nodes"]
     items = [i for i in nodes if i["fromState"] and i["toState"]]
@@ -224,13 +213,13 @@ def process_task(task):
 
     comments = "\n---\n".join(
         [
-            f"[{dt(c['createdAt'])}] {user_view(c['user'])}: {c['body']}"
+            f"[{format_dt(c['createdAt'])}] {user_view(c['user'])}: {c['body']}"
             for c in task["comments"]["nodes"]
         ]
     )
     attachments = "\n---\n".join(
         [
-            f"[{dt(a['createdAt'])}] {user_view(a['creator'])}: [{a['url']}]({a['title']})"
+            f"[{format_dt(a['createdAt'])}] {user_view(a['creator'])}: [{a['url']}]({a['title']})"
             for a in task["attachments"]["nodes"]
         ]
     )
@@ -246,17 +235,17 @@ def process_task(task):
         creator=user_view(task["creator"]),
         comments=comments,
         milestone=task["projectMilestone"]["name"] if task["projectMilestone"] else None,
-        created_at=dt(task["createdAt"]),
-        canceled_at=dt(task["canceledAt"]),
-        added_to_cycle_at=dt(task["addedToCycleAt"]),
-        added_to_project_at=dt(task["addedToProjectAt"]),
-        added_to_team_at=dt(task["addedToTeamAt"]),
-        archived_at=dt(task["archivedAt"]),
+        created_at=format_dt(task["createdAt"]),
+        canceled_at=format_dt(task["canceledAt"]),
+        added_to_cycle_at=format_dt(task["addedToCycleAt"]),
+        added_to_project_at=format_dt(task["addedToProjectAt"]),
+        added_to_team_at=format_dt(task["addedToTeamAt"]),
+        archived_at=format_dt(task["archivedAt"]),
         attachments=attachments,
         # attachments = task["attachments"]["nodes"],
         children=", ".join([i["identifier"] for i in task["children"]["nodes"]]),
         cycle=task["cycle"]["number"] if task["cycle"] else None,
-        due_date=dt(task["dueDate"]),
+        due_date=format_dt(task["dueDate"]),
         estimate=task["estimate"],
         labels=", ".join([i["name"] for i in task["labels"]["nodes"]]),
         priority=task["priority"],
@@ -264,21 +253,21 @@ def process_task(task):
         project=task["project"]["name"] if task["project"] else None,
         url=task["url"],
         snoozed_by=user_view(task["snoozedBy"]),
-        snoozed_until=dt(task["snoozedUntilAt"]),
-        started_at=dt(task["startedAt"]),
-        started_triage_at=dt(task["startedTriageAt"]),
+        snoozed_until=format_dt(task["snoozedUntilAt"]),
+        started_at=format_dt(task["startedAt"]),
+        started_triage_at=format_dt(task["startedTriageAt"]),
         subscribers=", ".join([user_view(i) for i in task["subscribers"]["nodes"]]),
         team=f"{task['team']['name']}" if task["team"] else None,
         trashed=task["trashed"],
-        triaged_at=dt(task["triagedAt"]),
-        completed_at=dt(task["completedAt"]),
-        updated_at=dt(task["updatedAt"]),
+        triaged_at=format_dt(task["triagedAt"]),
+        completed_at=format_dt(task["completedAt"]),
+        updated_at=format_dt(task["updatedAt"]),
     )
     data["all_content"] = mc.tpl(
         "issue_view.j2",
         issue=data,
         indent=textwrap.indent,
-        date_format=dt_human,
+        date_format=format_dt_human,
     )
     with db.session() as ses:
         stmt = insert(issues_table).values(data)

@@ -1,6 +1,7 @@
 import json
 import os
 from dataclasses import fields, is_dataclass
+from datetime import datetime
 from json import JSONDecodeError
 from types import UnionType
 from typing import TypeVar, get_args
@@ -81,3 +82,15 @@ def update_object_from_env(obj: T, prefixes: list[str] | None = None) -> T:
 
         setattr(obj, f.name, value)
     return obj
+
+
+def format_dt(value: str | datetime, fmt: str= "%Y-%m-%d %H:%M:%S") -> str:
+    if not value:
+        return None
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value)
+    return value.strftime(fmt)
+
+
+def format_dt_human(value: str | datetime) -> str:
+    return format_dt(value, "%d %B, %H:%M").replace(" 0", " ")
