@@ -3,6 +3,7 @@ import os
 from rich.pretty import pprint
 import ema.env as env
 from ema.cli_app import app
+from ema.agent import answer
 
 
 @app.command(name="team")
@@ -50,15 +51,10 @@ def schema():
 @app.command(name="ask")
 def ask(question: str):
     user = os.getenv("CLI_USER")
-
     print("Asking question:", question)
-
-    from ema.agent import answer
-
     answer(question=question, user=user)
 
 
-#
 @app.command(name="gql")
 def gql_query(query: str):
     print("Executing query:", query)

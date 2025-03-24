@@ -17,10 +17,8 @@ app = CliApp()
 
 
 def import_commands():
-    [
+    for _, name, _ in pkgutil.iter_modules(["ema/commands"]):
         import_module(f"ema.commands.{name}")
-        for _, name, _ in pkgutil.iter_modules(["ema/commands"])
-    ]
 
 
 def cli_bootstrap():

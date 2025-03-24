@@ -22,7 +22,7 @@ def extract_xml_tags(text: str) -> list[tuple[str, str]]:
         text (str): The text containing XML-like tags.
 
     Returns:
-        list[tuple[str, str]]: A list of tuples where each tuple contains a tag name and its content.
+        list[tuple[str, str]]: each tuple contains a tag name and its content.
     """
     matches = re.findall(r"<(\w+)>(.*?)</\1>", text, re.DOTALL)
     return [(tag, content.strip()) for tag, content in matches]
@@ -36,7 +36,8 @@ def extract_xml_tag(text: str) -> tuple[str, str] | None:
         text (str): The text containing XML-like tags.
 
     Returns:
-        tuple[str, str] | None: A tuple containing the tag name and its content, or None if no match is found.
+        tuple[str, str] | None: A tuple containing the tag name and its content,
+        or None if no match is found.
     """
     match = re.search(r"<(\w+)>(.*?)</\1>", text, re.DOTALL)
     if match:
@@ -124,7 +125,8 @@ def answer(
                 continue
             sys_answer = (
                 f"Error: unsupported action tag: {tag}. "
-                f"Use only tags described in <COMMAND_TAGS> section at the beginning of conversation."
+                f"Use only tags described in <COMMAND_TAGS> section "
+                f"at the beginning of conversation."
             )
         if final_response:
             break

@@ -446,12 +446,10 @@ class LinearApi:
 
     def schema(self):
         if mc.storage.exists("linear_schema.json"):
-            return mc.storage.get("linear_schema")
+            return mc.storage.read_json("linear_schema.json")
         schema = self.fetch_schema()
         mc.storage.write_json("linear_schema.json", schema, backup_existing=False)
         return schema
-
-    from datetime import datetime
 
     def fetch_all_issues(
         self, team: str = None, callback: callable = None, updated_after: datetime | str = None
