@@ -18,7 +18,7 @@ def init_db(verbose=False):
     session = sessionmaker(bind=db_engine)
     db_metadata = MetaData()
     # logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
-    check_db_connection()
+    # check_db_connection()
 
 
 def check_db_connection():
@@ -38,6 +38,7 @@ def sql(query: str):
         result = ses.execute(text(query))
         try:
             rows = result.mappings().all()
+            rows = [dict(row) for row in rows]
         except Exception:
             rows = None
         ses.commit()
