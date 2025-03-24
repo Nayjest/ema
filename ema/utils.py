@@ -7,17 +7,14 @@ from typing import TypeVar, get_args
 
 from microcore.configuration import TRUE_VALUES
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def is_optional_int(field_type):
     """Checks if the field is int | None in Python 3.10+"""
     args = get_args(field_type)
-    return (
-        isinstance(field_type, UnionType)
-        and int in args
-        and type(None) in args
-    )
+    return isinstance(field_type, UnionType) and int in args and type(None) in args
+
 
 def update_object_from_env(obj: T, prefixes: list[str] | None = None) -> T:
     """
@@ -75,13 +72,12 @@ def update_object_from_env(obj: T, prefixes: list[str] | None = None) -> T:
                 if not value:
                     value = []
                 else:
-                    if all(c in value for c in ('[', ']', '\"')):
+                    if all(c in value for c in ("[", "]", '"')):
                         value = json.loads(value)
                     else:
-                        value = [v.strip() for v in value.split(',') if v.strip()]
+                        value = [v.strip() for v in value.split(",") if v.strip()]
             except ValueError | JSONDecodeError:
                 raise ValueError(f"Incorrect ENV variable: {name} is not a list")
-
 
         setattr(obj, f.name, value)
     return obj

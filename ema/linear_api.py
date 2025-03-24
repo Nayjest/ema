@@ -28,10 +28,10 @@ fragment IssueFields on Issue {
     createdAt
     completedAt
     canceledAt
-    addedToCycleAt 
-    addedToProjectAt 
-    addedToTeamAt 
-    archivedAt 
+    addedToCycleAt
+    addedToProjectAt
+    addedToTeamAt
+    archivedAt
     attachments {
         nodes {
             id
@@ -63,27 +63,27 @@ fragment IssueFields on Issue {
     history {
         nodes {
             actor { name displayName }
-            archived 
-            archivedAt 
+            archived
+            archivedAt
             attachment {
                 id
                 title
                 url
             }
-            autoArchived 
+            autoArchived
             autoClosed
             createdAt
             descriptionUpdatedBy { name displayName }
             fromAssignee { name displayName }
             fromCycle { id name number }
-            fromEstimate 
+            fromEstimate
             fromPriority
             fromState { name }
             fromTitle
             fromDueDate
             toAssignee { name displayName }
             toCycle { id name number }
-            toEstimate 
+            toEstimate
             toPriority
             toState { name }
             toTitle
@@ -106,13 +106,13 @@ fragment IssueFields on Issue {
         id
         lead { name displayName }
         name
-        status { name } 
+        status { name }
         url
     }
     snoozedBy { name displayName }
-    snoozedUntilAt 
-    startedAt 
-    startedTriageAt 
+    snoozedUntilAt
+    startedAt
+    startedTriageAt
     subscribers {
         nodes { displayName name }
     }
@@ -135,6 +135,7 @@ class LinearConfig:
     def __post_init__(self):
         update_object_from_env(self, prefixes=self._ENV_PREFIXES)
 
+
 @dataclass
 class Team:
     id: str
@@ -144,25 +145,20 @@ class Team:
     def __str__(self):
         return f"{self.name} ({self.key})"
 
+
 class LinearApi:
     config: LinearConfig
 
     def __init__(self, config: LinearConfig):
         self.config = config
 
-
     @property
     def headers(self):
-        return {
-            "Authorization": self.config.api_key,
-            "Content-Type": "application/json"
-        }
+        return {"Authorization": self.config.api_key, "Content-Type": "application/json"}
 
     def request(self, query: str, variables: dict = None) -> dict:
         response = requests.post(
-            self.config.api_url,
-            headers=self.headers,
-            json={"query": query, "variables": variables}
+            self.config.api_url, headers=self.headers, json={"query": query, "variables": variables}
         )
         try:
             response.raise_for_status()
@@ -180,35 +176,36 @@ class LinearApi:
         data = response.json()
         return data["data"]
 
-
     def issues(self, team: str) -> list[dict]:
         team = self.find_team(team)
-        data = self.request("""
+        data = self.request(
+            """
         {
             issues (
                 first: 200
-                filter: { 
+                filter: {
                     team: { id: { eq: "%s" } }
-                    state: { name: {neq: "Done"} } 
+                    state: { name: {neq: "Done"} }
                 }
-            ) { 
-                nodes { 
-                    
+            ) {
+                nodes {
                     identifier
                     id
                     title
                     state { name }
                     description
                     assignee { displayName }
-                    # comments { nodes { 
-                    #     user { displayName } 
+                    # comments { nodes {
+                    #     user { displayName }
                     #     body
                     # } }
                 }
-            } 
+            }
         }
-        """ % team.id)
-        return data['issues']['nodes']
+        """
+            % team.id
+        )
+        return data["issues"]["nodes"]
 
     def issue(self, uuid: str) -> dict:
         query = """
@@ -220,7 +217,10 @@ class LinearApi:
                     }
                 }
             }
-            """ % (ISSUE_FRAGMENT,uuid)
+            """ % (
+            ISSUE_FRAGMENT,
+            uuid,
+        )
         variables = {}
         response = self.request(query, variables)
         return response["issues"]["nodes"][0]
@@ -242,24 +242,25 @@ class LinearApi:
 
             variables = {"cursor": cursor}
             data = self.request(query, variables)
-            nodes = data['teams']['nodes']
-            page_info = data['teams']['pageInfo']
+            nodes = data["teams"]["nodes"]
+            page_info = data["teams"]["pageInfo"]
             teams.extend(nodes)
-            has_next_page = page_info['hasNextPage']
-            cursor = page_info['endCursor']
+            has_next_page = page_info["hasNextPage"]
+            cursor = page_info["endCursor"]
         return [Team(**d) for d in teams]
 
-    def find_team(self, value:str) -> Team:
+    def find_team(self, value: str) -> Team:
         teams = self.teams()
         for team in teams:
             if team.name.lower() == value or team.key == value or team.id == value:
                 return team
 
-        raise ValueError(f"❌ Team not found!")
+        raise ValueError("❌ Team not found!")
 
     def fetch_schema(self):
         """
-        Fetches the GraphQL schema from Linear API in a reduced form while keeping all necessary fields and filtering methods.
+        Fetches the GraphQL schema from Linear API
+        in a reduced form while keeping all necessary fields and filtering methods.
 
         Returns:
             dict: The optimized schema.
@@ -281,7 +282,8 @@ class LinearApi:
 
         # Filter out introspection and mutation types
         type_names = [
-            t["name"] for t in basic_schema["__schema"]["types"]
+            t["name"]
+            for t in basic_schema["__schema"]["types"]
             if not t["name"].startswith("__") and t["kind"] != "MUTATION"
         ]
 
@@ -332,7 +334,11 @@ class LinearApi:
             if type_data and "__type" in type_data:
                 complete_schema["types"][type_name] = type_data["__type"]
 
-        print(ui.green(f"✓ Schema with {len(complete_schema['types'])} essential types successfully retrieved"))
+        print(
+            ui.green(
+                f"✓ Schema with {len(complete_schema['types'])} essential types successfully retrieved"
+            )
+        )
 
         return complete_schema
 
@@ -448,10 +454,7 @@ class LinearApi:
     from datetime import datetime
 
     def fetch_all_issues(
-        self,
-        team: str = None,
-        callback: callable = None,
-        updated_after: datetime | str = None
+        self, team: str = None, callback: callable = None, updated_after: datetime | str = None
     ) -> list[dict]:
         """
         Fetches all tasks (issues) from the Linear API.
@@ -469,9 +472,10 @@ class LinearApi:
         cursor = None
 
         while has_next_page:
-            print('.', end='')
+            print(".", end="")
 
-            query = """
+            query = (
+                """
             %s
             query ($cursor: String, $teamFilter: IssueFilter) {
               issues(first: 100, after: $cursor, filter: $teamFilter) {
@@ -484,7 +488,9 @@ class LinearApi:
                 }
               }
             }
-            """ % ISSUE_FRAGMENT
+            """
+                % ISSUE_FRAGMENT
+            )
 
             variables = {"cursor": cursor}
             filter_criteria = {}
@@ -517,11 +523,7 @@ class LinearApi:
 
         return tasks
 
-    def fetch_issue_qty(
-        self,
-        team: str = None,
-        updated_after: datetime | str = None
-    ) -> int:
+    def fetch_issue_qty(self, team: str = None, updated_after: datetime | str = None) -> int:
         """
         Counts the number of issues matching the filters via pagination.
 
@@ -565,7 +567,7 @@ class LinearApi:
             variables["teamFilter"] = filter_criteria
 
         while has_next_page:
-            print('.', end='')
+            print(".", end="")
             variables["cursor"] = cursor
             data = self.request(query, variables)
             nodes = data["issues"]["nodes"]
@@ -575,6 +577,7 @@ class LinearApi:
             cursor = page_info["endCursor"]
 
         return count
+
 
 #
 # # Fetch and print all teams
