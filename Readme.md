@@ -14,5 +14,5 @@
 
 ## 📝 License
 
-Licensed under the [MIT License](https://github.com/Nayjest/ai-microcore/blob/main/LICENSE)
+Licensed under the [MIT License](https://github.com/Nayjest/ema/blob/main/LICENSE)
 © 2025 [Vitalii Stepanenko](mailto:mail@vitaliy.in)
