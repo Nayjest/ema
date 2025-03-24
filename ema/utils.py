@@ -1,19 +1,25 @@
 import json
 import os
-from dataclasses import fields
+from dataclasses import fields, is_dataclass
 from json import JSONDecodeError
-from typing import TypeVar
+from types import UnionType
+from typing import TypeVar, get_args
 
 from microcore.configuration import TRUE_VALUES
 
 T = TypeVar('T')
 
 
-def update_object_from_env(
-    obj: T,
-    prefixes: list[str] | None = None,
-    allow_no_prefix: bool = True,
-) -> T:
+def is_optional_int(field_type):
+    """Checks if the field is int | None in Python 3.10+"""
+    args = get_args(field_type)
+    return (
+        isinstance(field_type, UnionType)
+        and int in args
+        and type(None) in args
+    )
+
+def update_object_from_env(obj: T, prefixes: list[str] | None = None) -> T:
     """
     Update object fields from environment variables
 
@@ -23,40 +29,47 @@ def update_object_from_env(
             - otherwise field.metadata.env_var will be used as ENV variable name
         Otherwise:
             - Try ENV var with uppercased and prefixed field name if defined
-            - Try ENV var with uppercased field name if exists
             - Leave field value as is if no ENV var found
     """
     for f in fields(obj.__class__):
-        # Find corresponding ENV variable or continue
+        if is_dataclass(f.type) and (field_obj := getattr(obj, f.name)):
+            update_object_from_env(field_obj, getattr(field_obj, "_ENV_PREFIXES", None))
+            continue
         if "env_var" in f.metadata:
             name = f.metadata["env_var"]
             if not name:
                 continue
         else:
-            name = f.name.upper()
             if prefixes:
-                found = False
+                name = None
                 for prefix in prefixes:
-                    if f"{prefix}{name}" in os.environ:
-                        name = f"{prefix}{name}"
+                    if f"{prefix}{f.name.upper()}" in os.environ:
+                        name = f"{prefix}{f.name.upper()}"
                         break
-                if not allow_no_prefix and not found:
+                if not name:
                     continue
+            else:
+                name = f.name.upper()
+
         if name not in os.environ:
             continue
         value = os.getenv(name)
 
-        # Convert ENV value to the fields type
-        if f.type is type(int | None):
+        if f.metadata.get("ignore_empty_env") and value == "":
+            continue
+        if is_optional_int(f.type):
             if value == "":
                 value = None
             elif not value.isdigit():
                 raise ValueError(f"Incorrect ENV variable: {name} is not an integer")
+            else:
+                value = int(value)
         elif f.type is bool:
             value = value.upper() in TRUE_VALUES
         elif f.type is int:
             if not value.isdigit():
                 raise ValueError(f"Incorrect ENV variable: {name} is not an integer")
+            value = int(value)
         elif f.type is list:
             try:
                 if not value:
@@ -68,6 +81,7 @@ def update_object_from_env(
                         value = [v.strip() for v in value.split(',') if v.strip()]
             except ValueError | JSONDecodeError:
                 raise ValueError(f"Incorrect ENV variable: {name} is not a list")
+
 
         setattr(obj, f.name, value)
     return obj

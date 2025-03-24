@@ -5,7 +5,6 @@ import requests
 from rich.pretty import pprint
 import microcore as mc
 from microcore import ui
-from functools import lru_cache
 
 from ema.utils import update_object_from_env
 
@@ -128,12 +127,13 @@ fragment IssueFields on Issue {
 
 @dataclass
 class LinearConfig:
+    _ENV_PREFIXES = ["LINEAR_"]
     api_url = "https://api.linear.app/graphql"
     api_key: str = field(default="")
     team_keys: list[str] = field(default_factory=list)
 
     def __post_init__(self):
-        update_object_from_env(self, prefixes=["LINEAR_"])
+        update_object_from_env(self, prefixes=self._ENV_PREFIXES)
 
 @dataclass
 class Team:
