@@ -1,0 +1,28 @@
+-------------------
+Greetings, {{ first_name }}!
+
+My name is Ema.
+I’m your Engineering Management Assistant, poised to weave some AI sorcery into your daily grind.
+
+I’ve cast my eye over your recent Linear task:
+<{{ issue['url'] }}|{{ issue['id'] }}> `{{ issue['title'] }}`
+
+Oh, what a canvas of potential it is!
+
+Like any perfectionist bot, I've come armed with a few strokes of genius to elevate your work from mere task to polished masterpiece.
+
+{% for p in issue['proposals'] %}
+🎯 *Recommendation {{ loop.index }}:*
+How about swapping {% if p['field']=='title' %}title {% endif %}
+```{{ p['replace_from'] }}```
+with the ever-so-elegant
+```{{ p['new_text_fragment'] }}```
+🔍 {{ p['related_issue'] }}
+☝️ {{ p['motivation'] }}
+-----
+{% endfor %}
+
+Looking forward to our next clever exchange!
+
+Warm regards,
+Ema 🤖✨

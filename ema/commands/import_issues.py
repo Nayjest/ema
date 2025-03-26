@@ -252,7 +252,9 @@ def process_task(task):
 
 
 @app.command("index-issues", help="Import issues from Linear")
+@app.command("index_issues", hidden=True)
 @app.command("import_issues", hidden=True)
+@app.command("import-issues", hidden=True)
 def index_issues(force: bool = False, fast: bool = False):
     print(ui.magenta("--==[[ Linear Issues Indexing ]]==--"))
     EPOCH_START = "1970-01-01"

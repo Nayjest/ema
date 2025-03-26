@@ -94,3 +94,12 @@ def format_dt(value: str | datetime, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
 
 def format_dt_human(value: str | datetime) -> str:
     return format_dt(value, "%d %B, %H:%M").replace(" 0", " ")
+
+def first_name(name: str) -> str:
+    return name.split("(")[1].split(" ")[0].replace(")", "")
+
+def nick_name(name: str) -> str:
+    return name.split("(")[0]
+
+def full_name(name: str) -> str:
+    return name.split("(")[1].replace(")", "")

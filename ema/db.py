@@ -32,10 +32,11 @@ def check_db_connection():
     print(f"[{ui.green('OK')}]")
 
 
-def sql(query: str):
+def sql(query: str, params: dict = None):
     global session
     with session() as ses:
-        result = ses.execute(text(query))
+        stmt = text(query)
+        result = ses.execute(stmt, params or {})
         try:
             rows = result.mappings().all()
             rows = [dict(row) for row in rows]
