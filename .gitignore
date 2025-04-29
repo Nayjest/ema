@@ -9,3 +9,4 @@ __pycache__
 !.env*.example
 storage
 scratches/http-client.private.env.json
+.aico
