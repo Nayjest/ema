@@ -23,6 +23,16 @@ def review(
     ),
     notify: bool = False
 ):
+    """
+    Review issues created after the specified date and send Slack notifications if requested.
+    Reviewed issues are stored in the 'issue_reviews.json' file.
+    Slack notifications may be sent separately.
+    Args:
+        from_date (Optional[str]): The date from which to review issues (format: YYYY-MM-DD).
+            By default, it will select issues created in the last 5 days.
+
+        notify (bool): default=false, Whether to send Slack notifications for reviewed issues.
+    """
     t = time()
     print(ui.magenta("---==[[Send issue reviews]]==---"))
     if not from_date:
